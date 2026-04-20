@@ -8,7 +8,9 @@ const configuration = {
 const connectionBadge = document.querySelector("#connectionBadge");
 const roleBadge = document.querySelector("#roleBadge");
 const channelState = document.querySelector("#channelState");
+const inviteLink = document.querySelector("#inviteLink");
 const localSignal = document.querySelector("#localSignal");
+const localSignalBase64 = document.querySelector("#localSignalBase64");
 const remoteSignal = document.querySelector("#remoteSignal");
 const messages = document.querySelector("#messages");
 const messageInput = document.querySelector("#messageInput");
@@ -17,7 +19,9 @@ const createOfferButton = document.querySelector("#createOfferButton");
 const acceptOfferButton = document.querySelector("#acceptOfferButton");
 const createAnswerButton = document.querySelector("#createAnswerButton");
 const applyAnswerButton = document.querySelector("#applyAnswerButton");
+const copyInviteLinkButton = document.querySelector("#copyInviteLinkButton");
 const copyLocalSignalButton = document.querySelector("#copyLocalSignalButton");
+const copyLocalSignalBase64Button = document.querySelector("#copyLocalSignalBase64Button");
 const resetButton = document.querySelector("#resetButton");
 const chatForm = document.querySelector("#chatForm");
 const messageTemplate = document.querySelector("#messageTemplate");
@@ -74,6 +78,21 @@ function addSystemMessage(body) {
   addMessage("Systeme", body);
 }
 
+function toBase64(value) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
+function fromBase64(value) {
+  const binary = atob(value);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
 function serializeDescription(description, extras = {}) {
   return JSON.stringify(
     {
@@ -86,18 +105,70 @@ function serializeDescription(description, extras = {}) {
   );
 }
 
-function parseSignal(value) {
-  try {
-    const parsed = JSON.parse(value);
+function encodeSignalBase64(payload) {
+  return toBase64(JSON.stringify(payload));
+}
 
-    if (!parsed?.type || !parsed?.sdp) {
-      throw new Error("Format incomplet.");
-    }
+function extractSignalToken(value) {
+  const trimmed = value.trim();
 
-    return parsed;
-  } catch (error) {
-    throw new Error("Le signal colle n'est pas valide.");
+  if (!trimmed) {
+    throw new Error("Le signal colle est vide.");
   }
+
+  if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  let url;
+  try {
+    url = new URL(trimmed);
+  } catch (error) {
+    return trimmed;
+  }
+
+  const offerToken = url.searchParams.get("offer");
+  if (offerToken) {
+    return offerToken;
+  }
+
+  const answerToken = url.searchParams.get("answer");
+  if (answerToken) {
+    return answerToken;
+  }
+
+  return trimmed;
+}
+
+function parseSignal(value) {
+  const token = extractSignalToken(value);
+
+  try {
+    const parsedJson = JSON.parse(token);
+    if (parsedJson?.type && parsedJson?.sdp) {
+      return parsedJson;
+    }
+  } catch (error) {
+    // Continue with base64 parsing.
+  }
+
+  try {
+    const decoded = fromBase64(token);
+    const parsedBase64 = JSON.parse(decoded);
+    if (parsedBase64?.type && parsedBase64?.sdp) {
+      return parsedBase64;
+    }
+  } catch (error) {
+    // Fall through to unified error.
+  }
+
+  throw new Error("Le signal colle n'est ni un JSON valide ni un base64 valide.");
+}
+
+function buildInviteLink(offerBase64) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("offer", offerBase64);
+  return url.toString();
 }
 
 function wireDataChannel(channel) {
@@ -175,7 +246,9 @@ function resetChat() {
   dataChannel = null;
   currentRole = null;
   currentSessionId = null;
+  inviteLink.value = "";
   localSignal.value = "";
+  localSignalBase64.value = "";
   remoteSignal.value = "";
   messages.replaceChildren();
   messageInput.value = "";
@@ -203,7 +276,7 @@ function waitForIceGatheringComplete(connection) {
 
 async function createOffer() {
   resetChat();
-  setRole("Initiateur");
+  setRole("Host");
   currentSessionId = generateSessionId();
 
   const connection = createPeerConnection();
@@ -214,32 +287,59 @@ async function createOffer() {
   await connection.setLocalDescription(offer);
   await waitForIceGatheringComplete(connection);
 
-  localSignal.value = serializeDescription(connection.localDescription, { sessionId: currentSessionId });
+  const offerPayload = {
+    type: connection.localDescription.type,
+    sdp: connection.localDescription.sdp,
+    sessionId: currentSessionId,
+  };
+
+  const offerJson = serializeDescription(connection.localDescription, { sessionId: currentSessionId });
+  const offerBase64 = encodeSignalBase64(offerPayload);
+
+  localSignal.value = offerJson;
+  localSignalBase64.value = offerBase64;
+  inviteLink.value = buildInviteLink(offerBase64);
   setConnectionState("Offre generee");
-  addSystemMessage("Partage ce bloc a la seconde page, puis colle sa reponse dans le champ distant.");
+  addSystemMessage("Lien d'invitation genere. Partage ce lien avec l'invite.");
 }
 
-async function createAnswer() {
-  const offer = parseSignal(remoteSignal.value.trim());
-
-  if (offer.type !== "offer") {
+async function createAnswerFromOffer(offerPayload, source = "manual") {
+  if (offerPayload.type !== "offer") {
     throw new Error("Le signal distant doit etre une offre.");
   }
 
   resetChat();
-  setRole("Repondeur");
-  currentSessionId = offer.sessionId || null;
+  setRole("Invite");
+  currentSessionId = offerPayload.sessionId || null;
 
   const connection = createPeerConnection();
-  await connection.setRemoteDescription({ type: offer.type, sdp: offer.sdp });
+  await connection.setRemoteDescription({ type: offerPayload.type, sdp: offerPayload.sdp });
 
   const answer = await connection.createAnswer();
   await connection.setLocalDescription(answer);
   await waitForIceGatheringComplete(connection);
 
+  const answerPayload = {
+    type: connection.localDescription.type,
+    sdp: connection.localDescription.sdp,
+    sessionId: currentSessionId,
+  };
+
   localSignal.value = serializeDescription(connection.localDescription, { sessionId: currentSessionId });
+  localSignalBase64.value = encodeSignalBase64(answerPayload);
   setConnectionState("Reponse generee");
-  addSystemMessage("Partage ce bloc a l'initiateur pour terminer la connexion.");
+
+  if (source === "invite-link") {
+    addSystemMessage("Offre detectee dans le lien. Reponse base64 prete a copier pour le host.");
+    return;
+  }
+
+  addSystemMessage("Reponse base64 prete. Envoie-la au host pour finaliser la connexion.");
+}
+
+async function createAnswer() {
+  const offer = parseSignal(remoteSignal.value.trim());
+  await createAnswerFromOffer(offer, "manual");
 }
 
 async function applyAnswerPayload(answer) {
@@ -265,13 +365,27 @@ async function applyAnswer() {
   await applyAnswerPayload(answer);
 }
 
-async function copyLocalSignal() {
-  if (!localSignal.value.trim()) {
-    throw new Error("Aucun signal local a copier.");
+async function copyText(value, emptyMessage) {
+  if (!value.trim()) {
+    throw new Error(emptyMessage);
   }
 
-  await navigator.clipboard.writeText(localSignal.value);
-  addSystemMessage("Signal local copie dans le presse-papiers.");
+  await navigator.clipboard.writeText(value);
+}
+
+async function copyInviteLink() {
+  await copyText(inviteLink.value, "Aucun lien d'invitation a copier.");
+  addSystemMessage("Lien d'invitation copie.");
+}
+
+async function copyLocalSignal() {
+  await copyText(localSignal.value, "Aucun signal local JSON a copier.");
+  addSystemMessage("Signal JSON copie dans le presse-papiers.");
+}
+
+async function copyLocalSignalBase64() {
+  await copyText(localSignalBase64.value, "Aucun signal local base64 a copier.");
+  addSystemMessage("Signal base64 copie dans le presse-papiers.");
 }
 
 function sendMessage(event) {
@@ -296,19 +410,40 @@ async function runAction(action) {
   }
 }
 
+function applyOfferFromUrlIfPresent() {
+  const url = new URL(window.location.href);
+  const offerToken = url.searchParams.get("offer");
+
+  if (!offerToken) {
+    setRole("Host");
+    addSystemMessage("Mode host actif. Cree une offre pour generer un lien d'invitation.");
+    return;
+  }
+
+  remoteSignal.value = offerToken;
+  runAction(async () => {
+    const offer = parseSignal(offerToken);
+    await createAnswerFromOffer(offer, "invite-link");
+  });
+}
+
 createOfferButton.addEventListener("click", () => runAction(createOffer));
 acceptOfferButton.addEventListener("click", () => {
   remoteSignal.focus();
-  addSystemMessage("Colle une offre distante, puis clique sur Generer une reponse.");
+  addSystemMessage("Colle une offre (JSON/base64/lien) puis clique sur Generer une reponse.");
 });
 createAnswerButton.addEventListener("click", () => runAction(createAnswer));
 applyAnswerButton.addEventListener("click", () => runAction(applyAnswer));
+copyInviteLinkButton.addEventListener("click", () => runAction(copyInviteLink));
 copyLocalSignalButton.addEventListener("click", () => runAction(copyLocalSignal));
+copyLocalSignalBase64Button.addEventListener("click", () => runAction(copyLocalSignalBase64));
 resetButton.addEventListener("click", () => {
   resetChat();
   addSystemMessage("Session chat reinitialisee.");
+  applyOfferFromUrlIfPresent();
 });
 chatForm.addEventListener("submit", sendMessage);
 
 setConnectionState("Hors ligne");
 setChannelState("Canal ferme", false);
+applyOfferFromUrlIfPresent();

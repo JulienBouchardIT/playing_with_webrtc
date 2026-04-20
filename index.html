@@ -29,7 +29,7 @@
       <section class="panel panel-accent">
         <h2>1. Initialiser la connexion</h2>
         <p class="section-copy">
-          Choisis ton cote. L'initiateur cree une offre. Le second colle cette offre et genere une reponse.
+          Le host cree une offre puis partage un lien d'invitation. L'invite ouvre ce lien et genere une reponse.
         </p>
         <div class="action-row">
           <button id="createOfferButton" class="button button-primary">Creer une offre</button>
@@ -37,24 +37,36 @@
           <button id="resetButton" class="button button-ghost">Reinitialiser</button>
         </div>
         <ol class="steps">
-          <li>Cote A: clique sur <strong>Creer une offre</strong> puis partage le bloc genere.</li>
-          <li>Cote B: colle l'offre recue, puis clique sur <strong>Generer une reponse</strong>.</li>
-          <li>Cote B partage la reponse a A, puis A clique sur <strong>Appliquer la reponse</strong>.</li>
+          <li>Host: clique sur <strong>Creer une offre</strong>, puis copie le lien d'invitation genere.</li>
+          <li>Invite: ouvre ce lien. La page detecte l'offre automatiquement et genere une reponse.</li>
+          <li>Invite: partage le bloc base64 de reponse au host, puis host clique sur <strong>Appliquer la reponse</strong>.</li>
         </ol>
       </section>
 
       <section class="panel">
-        <h2>2. Signal local</h2>
-        <label class="field-label" for="localSignal">Bloc a partager</label>
-        <textarea id="localSignal" class="code-box" readonly placeholder="Le signal local apparaitra ici."></textarea>
+        <h2>2. Lien d'invitation</h2>
+        <label class="field-label" for="inviteLink">Lien host vers invite</label>
+        <textarea id="inviteLink" class="code-box compact-box" readonly placeholder="Le lien d'invitation apparaitra ici apres creation d'offre."></textarea>
         <div class="action-row compact-row">
-          <button id="copyLocalSignalButton" class="button">Copier</button>
+          <button id="copyInviteLinkButton" class="button">Copier le lien</button>
         </div>
       </section>
 
       <section class="panel">
-        <h2>3. Signal distant</h2>
-        <label class="field-label" for="remoteSignal">Bloc recu</label>
+        <h2>3. Signal local</h2>
+        <label class="field-label" for="localSignal">Bloc JSON local</label>
+        <textarea id="localSignal" class="code-box" readonly placeholder="Le signal local apparaitra ici."></textarea>
+        <label class="field-label" for="localSignalBase64">Bloc base64 pret a partager</label>
+        <textarea id="localSignalBase64" class="code-box compact-box" readonly placeholder="La version base64 du signal local apparaitra ici."></textarea>
+        <div class="action-row compact-row">
+          <button id="copyLocalSignalButton" class="button">Copier JSON</button>
+          <button id="copyLocalSignalBase64Button" class="button">Copier base64</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>4. Signal distant</h2>
+        <label class="field-label" for="remoteSignal">Bloc recu (JSON, base64, ou lien d'invitation)</label>
         <textarea id="remoteSignal" class="code-box" placeholder="Colle ici l'offre ou la reponse recue."></textarea>
         <div class="action-row">
           <button id="createAnswerButton" class="button">Generer une reponse</button>
@@ -65,7 +77,7 @@
       <section class="panel panel-chat">
         <div class="chat-header">
           <div>
-            <h2>4. Messages</h2>
+            <h2>5. Messages</h2>
             <p class="section-copy">Le chat s'active des que le canal de donnees est ouvert.</p>
           </div>
           <span id="channelState">Canal ferme</span>

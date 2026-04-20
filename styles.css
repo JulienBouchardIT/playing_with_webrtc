@@ -169,6 +169,10 @@ h2 {
   resize: vertical;
 }
 
+.code-box.compact-box {
+  min-height: 96px;
+}
+
 .action-row {
   display: flex;
   flex-wrap: wrap;
