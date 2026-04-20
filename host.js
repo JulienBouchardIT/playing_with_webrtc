@@ -128,8 +128,12 @@ function openChatPage(role) {
   const url = new URL("chat.html", window.location.href);
   url.searchParams.set("session", currentSessionId);
   url.searchParams.set("role", role);
-  chatOpened = true;
-  window.location.assign(url.toString());
+  const tab = window.open(url.toString(), "_blank");
+
+  if (tab) {
+    chatOpened = true;
+    tab.focus();
+  }
 }
 
 function bridgeState(stateLabel, connected = false) {

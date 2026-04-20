@@ -2,6 +2,8 @@
 
 Petite page statique compatible GitHub Pages pour discuter entre deux pages web avec WebRTC.
 
+Page en ligne: https://julienbouchardit.github.io/playing_with_webrtc/
+
 ## Ce que fait le projet
 
 - Front statique compatible GitHub Pages.
