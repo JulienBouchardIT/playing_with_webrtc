@@ -26,25 +26,16 @@
 
     <main class="grid">
       <section class="panel panel-accent">
-        <h2>1. Reponse a renvoyer</h2>
+        <h2>Session Invite</h2>
         <label class="field-label" for="answerBase64">Reponse base64</label>
         <textarea id="answerBase64" class="code-box compact-box" readonly placeholder="La reponse base64 apparaitra ici."></textarea>
         <div class="action-row compact-row">
           <button id="copyAnswerButton" class="button button-primary">Copier la reponse</button>
           <button id="regenerateAnswerButton" class="button button-ghost">Regenerer</button>
         </div>
-      </section>
-
-      <section class="panel">
-        <h2>2. Reponse JSON</h2>
+        <span id="channelState" class="badge">Canal ferme</span>
         <label class="field-label" for="localSignal">Reponse JSON</label>
         <textarea id="localSignal" class="code-box" readonly placeholder="La reponse JSON apparaitra ici."></textarea>
-      </section>
-
-      <section class="panel panel-chat">
-        <h2>3. Chat</h2>
-        <p class="section-copy">Quand la session est connectee, la page `chat.html` s'ouvre automatiquement.</p>
-        <span id="channelState">Canal ferme</span>
       </section>
     </main>
   </div>

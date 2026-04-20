@@ -13,21 +13,16 @@
 <body>
   <div class="page-shell">
     <header class="hero">
-      <p class="eyebrow">WebRTC Host</p>
-      <h1>Host: session creee automatiquement.</h1>
-      <p class="hero-copy">
-        Cette page genere la session des l'ouverture. Partage le lien d'invitation, puis colle la reponse
-        base64 de l'invite pour ouvrir le chat.
-      </p>
       <div class="status-bar">
         <span id="connectionBadge" class="badge badge-idle">Hors ligne</span>
         <span id="roleBadge" class="badge">Role: Host</span>
+        <span id="channelState" class="badge">Canal ferme</span>
       </div>
     </header>
 
     <main class="grid">
       <section class="panel panel-accent">
-        <h2>1. Lien d'invitation</h2>
+        <h2>Session Host</h2>
         <p class="section-copy">
           Le lien est genere automatiquement avec la session encodee dans `session`.
         </p>
@@ -37,21 +32,11 @@
           <button id="copyInviteLinkButton" class="button">Copier le lien</button>
           <button id="regenerateOfferButton" class="button button-ghost">Regenerer la session</button>
         </div>
-      </section>
-
-      <section class="panel">
-        <h2>2. Reponse Invite</h2>
         <label class="field-label" for="remoteSignal">Bloc recu (base64, JSON ou lien)</label>
         <textarea id="remoteSignal" class="code-box" placeholder="Colle ici la reponse envoyee par l'invite."></textarea>
         <div class="action-row compact-row">
           <button id="applyAnswerButton" class="button button-primary">Appliquer la reponse</button>
         </div>
-      </section>
-
-      <section class="panel panel-chat">
-        <h2>3. Chat</h2>
-        <p class="section-copy">Quand la session est connectee, la page `chat.html` s'ouvre automatiquement.</p>
-        <span id="channelState">Canal ferme</span>
       </section>
     </main>
   </div>
