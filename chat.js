@@ -32,7 +32,7 @@ function addMessage(author, body) {
   const root = fragment.querySelector(".message");
   root.dataset.author = author;
   fragment.querySelector(".message-author").textContent = author;
-  fragment.querySelector(".message-time").textContent = new Date().toLocaleTimeString("fr-FR", {
+  fragment.querySelector(".message-time").textContent = new Date().toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -42,7 +42,7 @@ function addMessage(author, body) {
 }
 
 function addSystemMessage(body) {
-  addMessage("Systeme", body);
+  addMessage("System", body);
 }
 
 function handleBridgeMessage(event) {
@@ -53,8 +53,8 @@ function handleBridgeMessage(event) {
 
   if (payload.kind === "state") {
     isConnected = !!payload.connected;
-    setConnectionState(payload.text || "Etat inconnu", !!payload.connected);
-    setChannelState(payload.connected ? "Canal ouvert" : "Canal ferme", !!payload.connected);
+    setConnectionState(payload.text || "Unknown state", !!payload.connected);
+    setChannelState(payload.connected ? "Channel open" : "Channel closed", !!payload.connected);
 
     if (isConnected && syncTimer) {
       clearInterval(syncTimer);
@@ -64,12 +64,12 @@ function handleBridgeMessage(event) {
   }
 
   if (payload.kind === "incoming") {
-    addMessage("Pair", payload.text || "");
+    addMessage("Peer", payload.text || "");
     return;
   }
 
   if (payload.kind === "self") {
-    addMessage("Moi", payload.text || "");
+    addMessage("Me", payload.text || "");
   }
 }
 
@@ -88,9 +88,9 @@ function sendMessage(event) {
 
 function init() {
   if (!sessionId) {
-    chatMeta.textContent = "Session manquante dans l'URL.";
-    setConnectionState("Session manquante");
-    setChannelState("Canal ferme", false);
+    chatMeta.textContent = "Session is missing from the URL.";
+    setConnectionState("Session missing");
+    setChannelState("Channel closed", false);
     return;
   }
 
@@ -98,9 +98,9 @@ function init() {
   bridgeChannel = new BroadcastChannel(`webrtc-chat-${sessionId}`);
   bridgeChannel.addEventListener("message", handleBridgeMessage);
 
-  setConnectionState("En attente de connexion");
-  setChannelState("Canal ferme", false);
-  addSystemMessage("Page chat prete. En attente d'une session connectee.");
+  setConnectionState("Waiting for connection");
+  setChannelState("Channel closed", false);
+  addSystemMessage("Chat page is ready. Waiting for a connected session.");
 
   // Ask the host/invite page for current state in case initial events were missed.
   bridgeChannel.postMessage({ kind: "sync-request" });

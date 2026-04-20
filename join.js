@@ -50,7 +50,7 @@ function parseSessionToken(token) {
   const payload = JSON.parse(decoded);
 
   if (payload.type !== "offer" || !payload.sdp) {
-    throw new Error("Le parametre session n'est pas valide.");
+    throw new Error("The session parameter is not valid.");
   }
 
   return payload;
@@ -70,7 +70,7 @@ function setBridgeChannel(id) {
 
     if (payload.kind === "sync-request") {
       const isConnected = !!dataChannel && dataChannel.readyState === "open";
-      bridgeState(isConnected ? "Session connectee" : "En attente de connexion", isConnected);
+      bridgeState(isConnected ? "Session connected" : "Waiting for connection", isConnected);
       return;
     }
 
@@ -111,18 +111,18 @@ function wireDataChannel(channel) {
   dataChannel = channel;
 
   dataChannel.addEventListener("open", () => {
-    setConnectionState("Connecte", true);
-    setChannelState("Canal ouvert");
-    bridgeState("Session connectee", true);
+    setConnectionState("Connected", true);
+    setChannelState("Channel open");
+    bridgeState("Session connected", true);
     if (!chatOpened) {
       openChatPage();
     }
   });
 
   dataChannel.addEventListener("close", () => {
-    setConnectionState("Deconnecte", false);
-    setChannelState("Canal ferme");
-    bridgeState("Session fermee", false);
+    setConnectionState("Disconnected", false);
+    setChannelState("Channel closed");
+    bridgeState("Session closed", false);
   });
 
   dataChannel.addEventListener("message", (event) => {
@@ -140,34 +140,34 @@ function createPeerConnection() {
   }
 
   peerConnection = new RTCPeerConnection(configuration);
-  setConnectionState("Session prete");
+  setConnectionState("Session ready");
 
   peerConnection.addEventListener("connectionstatechange", () => {
     const state = peerConnection.connectionState;
 
     if (state === "connected") {
-      setConnectionState("Connecte", true);
+      setConnectionState("Connected", true);
       return;
     }
 
     if (state === "connecting") {
-      setConnectionState("Connexion en cours");
-      setChannelState("Canal en cours");
-      bridgeState("Connexion en cours", false);
+      setConnectionState("Connecting");
+      setChannelState("Channel opening");
+      bridgeState("Connecting", false);
       return;
     }
 
     if (state === "failed") {
-      setConnectionState("Echec de connexion");
-      setChannelState("Canal ferme");
-      bridgeState("Echec de connexion", false);
+      setConnectionState("Connection failed");
+      setChannelState("Channel closed");
+      bridgeState("Connection failed", false);
       return;
     }
 
     if (state === "disconnected" || state === "closed") {
-      setConnectionState("Deconnecte");
-      setChannelState("Canal ferme");
-      bridgeState("Session deconnectee", false);
+      setConnectionState("Disconnected");
+      setChannelState("Channel closed");
+      bridgeState("Session disconnected", false);
     }
   });
 
@@ -216,13 +216,13 @@ function resetSession() {
   if (localSignal) {
     localSignal.value = "";
   }
-  setConnectionState("Hors ligne");
-  setChannelState("Canal ferme");
+  setConnectionState("Offline");
+  setChannelState("Channel closed");
 }
 
 async function acceptSessionFromUrl() {
   if (!sessionToken) {
-    throw new Error("Cette page doit etre ouverte avec un parametre session dans l'URL.");
+    throw new Error("This page must be opened with a session parameter in the URL.");
   }
 
   resetSession();
@@ -249,14 +249,14 @@ async function acceptSessionFromUrl() {
     localSignal.value = JSON.stringify(answerPayload, null, 2);
   }
   answerBase64.value = toBase64(JSON.stringify(answerPayload));
-  setConnectionState("Reponse generee");
-  setChannelState("Canal ferme");
-  bridgeState("Reponse generee", false);
+  setConnectionState("Answer generated");
+  setChannelState("Channel closed");
+  bridgeState("Answer generated", false);
 }
 
 async function copyAnswer() {
   if (!answerBase64.value.trim()) {
-    throw new Error("Aucune reponse a copier.");
+    throw new Error("No answer to copy.");
   }
 
   await navigator.clipboard.writeText(answerBase64.value);
@@ -266,7 +266,7 @@ async function runAction(action) {
   try {
     await action();
   } catch (error) {
-    setChannelState(error.message || "Erreur");
+    setChannelState(error.message || "Error");
   }
 }
 

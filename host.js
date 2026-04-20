@@ -60,7 +60,7 @@ function fromBase64(value) {
 function parseSignal(value) {
   const trimmed = value.trim();
   if (!trimmed) {
-    throw new Error("Le signal colle est vide.");
+    throw new Error("Pasted signal is empty.");
   }
 
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
@@ -90,7 +90,7 @@ function parseSignal(value) {
     // Fall through.
   }
 
-  throw new Error("Le signal colle n'est ni un JSON valide ni un base64 valide.");
+  throw new Error("Pasted signal is neither valid JSON nor valid base64.");
 }
 
 function setBridgeChannel(sessionId) {
@@ -107,7 +107,7 @@ function setBridgeChannel(sessionId) {
 
     if (payload.kind === "sync-request") {
       const isConnected = !!dataChannel && dataChannel.readyState === "open";
-      bridgeState(isConnected ? "Session connectee" : "En attente de connexion", isConnected);
+      bridgeState(isConnected ? "Session connected" : "Waiting for connection", isConnected);
       return;
     }
 
@@ -152,18 +152,18 @@ function wireDataChannel(channel) {
   dataChannel = channel;
 
   dataChannel.addEventListener("open", () => {
-    setConnectionState("Connecte", true);
-    setChannelState("Canal ouvert");
-    bridgeState("Session connectee", true);
+    setConnectionState("Connected", true);
+    setChannelState("Channel open");
+    bridgeState("Session connected", true);
     if (!chatOpened) {
       openChatPage("host");
     }
   });
 
   dataChannel.addEventListener("close", () => {
-    setConnectionState("Deconnecte", false);
-    setChannelState("Canal ferme");
-    bridgeState("Session fermee", false);
+    setConnectionState("Disconnected", false);
+    setChannelState("Channel closed");
+    bridgeState("Session closed", false);
   });
 
   dataChannel.addEventListener("message", (event) => {
@@ -180,27 +180,27 @@ function attachPeerConnectionEvents() {
     const state = peerConnection.connectionState;
 
     if (state === "connected") {
-      setConnectionState("Connecte", true);
+      setConnectionState("Connected", true);
       return;
     }
 
     if (state === "connecting") {
-      setConnectionState("Connexion en cours");
-      setChannelState("Canal en cours");
-      bridgeState("Connexion en cours", false);
+      setConnectionState("Connecting");
+      setChannelState("Channel opening");
+      bridgeState("Connecting", false);
       return;
     }
 
     if (state === "failed") {
-      setConnectionState("Echec de connexion");
-      bridgeState("Echec de connexion", false);
+      setConnectionState("Connection failed");
+      bridgeState("Connection failed", false);
       return;
     }
 
     if (state === "disconnected" || state === "closed") {
-      setConnectionState("Deconnecte");
-      setChannelState("Canal ferme");
-      bridgeState("Session deconnectee", false);
+      setConnectionState("Disconnected");
+      setChannelState("Channel closed");
+      bridgeState("Session disconnected", false);
     }
   });
 }
@@ -212,7 +212,7 @@ function createPeerConnection() {
 
   peerConnection = new RTCPeerConnection(configuration);
   attachPeerConnectionEvents();
-  setConnectionState("Session prete");
+  setConnectionState("Session ready");
   return peerConnection;
 }
 
@@ -253,8 +253,8 @@ function resetSession() {
   chatOpened = false;
   inviteLink.value = "";
   remoteSignal.value = "";
-  setConnectionState("Hors ligne");
-  setChannelState("Canal ferme");
+  setConnectionState("Offline");
+  setChannelState("Channel closed");
 }
 
 async function createSessionNow() {
@@ -283,20 +283,20 @@ async function createSessionNow() {
   joinUrl.searchParams.set("session", token);
   inviteLink.value = joinUrl.toString();
 
-  setConnectionState("Session generee");
-  setChannelState("Canal ferme");
-  bridgeState("Session generee", false);
+  setConnectionState("Session created");
+  setChannelState("Channel closed");
+  bridgeState("Session created", false);
 }
 
 async function applyAnswer() {
   const answer = parseSignal(remoteSignal.value.trim());
 
   if (!peerConnection || !peerConnection.localDescription || peerConnection.localDescription.type !== "offer") {
-    throw new Error("Aucune session active. Regenerer d'abord la session.");
+    throw new Error("No active session. Regenerate the session first.");
   }
 
   if (answer.type !== "answer") {
-    throw new Error("Le bloc recu doit etre une reponse.");
+    throw new Error("The provided block must be an answer.");
   }
 
   if (peerConnection.remoteDescription) {
@@ -304,14 +304,14 @@ async function applyAnswer() {
   }
 
   await peerConnection.setRemoteDescription({ type: answer.type, sdp: answer.sdp });
-  setConnectionState("Connexion en cours");
-  setChannelState("Canal en cours");
-  bridgeState("Reponse appliquee, connexion en cours", false);
+  setConnectionState("Connecting");
+  setChannelState("Channel opening");
+  bridgeState("Answer applied, connecting", false);
 }
 
 async function copyInviteLink() {
   if (!inviteLink.value.trim()) {
-    throw new Error("Aucun lien d'invitation a copier.");
+    throw new Error("No invite link to copy.");
   }
 
   await navigator.clipboard.writeText(inviteLink.value);
@@ -321,7 +321,7 @@ async function runAction(action) {
   try {
     await action();
   } catch (error) {
-    setChannelState(error.message || "Erreur");
+    setChannelState(error.message || "Error");
   }
 }
 
