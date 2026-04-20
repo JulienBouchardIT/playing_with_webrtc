@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebRTC Invite</title>
+  <meta name="description" content="Page invite WebRTC: accepte une offre depuis l'URL et genere une reponse.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <p class="eyebrow">WebRTC Invite</p>
+      <h1>Invite: offre acceptee depuis l'URL.</h1>
+      <p class="hero-copy">
+        Ouvre cette page avec un parametre `offer`. La reponse base64 est generee automatiquement.
+      </p>
+      <div class="status-bar">
+        <span id="connectionBadge" class="badge badge-idle">Hors ligne</span>
+        <span id="roleBadge" class="badge">Role: Invite</span>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="panel panel-accent">
+        <h2>1. Reponse a renvoyer</h2>
+        <label class="field-label" for="answerBase64">Reponse base64</label>
+        <textarea id="answerBase64" class="code-box compact-box" readonly placeholder="La reponse base64 apparaitra ici."></textarea>
+        <div class="action-row compact-row">
+          <button id="copyAnswerButton" class="button button-primary">Copier la reponse</button>
+          <button id="regenerateAnswerButton" class="button button-ghost">Regenerer</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>2. Debug</h2>
+        <label class="field-label" for="localSignal">Reponse JSON</label>
+        <textarea id="localSignal" class="code-box" readonly placeholder="La reponse JSON apparaitra ici."></textarea>
+      </section>
+
+      <section class="panel panel-chat">
+        <div class="chat-header">
+          <div>
+            <h2>3. Messages</h2>
+            <p class="section-copy">Le chat s'active des que le host applique la reponse.</p>
+          </div>
+          <span id="channelState">Canal ferme</span>
+        </div>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <form id="chatForm" class="chat-form">
+          <label class="sr-only" for="messageInput">Message</label>
+          <input id="messageInput" type="text" maxlength="800" placeholder="Ecris un message..." autocomplete="off" disabled>
+          <button id="sendButton" class="button button-primary" type="submit" disabled>Envoyer</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <template id="messageTemplate">
+    <article class="message">
+      <header>
+        <span class="message-author"></span>
+        <time class="message-time"></time>
+      </header>
+      <p class="message-body"></p>
+    </article>
+  </template>
+
+  <script type="module" src="./join.js"></script>
+</body>
+</html>

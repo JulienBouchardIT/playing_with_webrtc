@@ -5,9 +5,10 @@ Petite page statique compatible GitHub Pages pour discuter entre deux pages web 
 ## Ce que fait le projet
 
 - Front statique compatible GitHub Pages.
-- Le host genere un lien d'invitation contenant l'offre en base64 dans l'URL.
-- L'invite ouvre ce lien: l'offre est acceptee automatiquement et la reponse est generee.
-- Reponse partageable en base64 (copier-coller) pour finaliser cote host.
+- Deux pages separees: `index.html` (host) et `join.html` (invite).
+- La page host cree automatiquement une offre au chargement.
+- Le lien d'invitation contient l'offre en base64 (`offer`).
+- La page invite accepte automatiquement l'offre depuis l'URL et genere une reponse base64.
 - Chat texte via `RTCDataChannel`.
 
 ## Mise en ligne sur GitHub Pages
@@ -18,19 +19,16 @@ Petite page statique compatible GitHub Pages pour discuter entre deux pages web 
 
 ## Utilisation
 
-1. Le host ouvre la page normalement (sans parametre `offer`).
-2. Le host clique sur `Creer une offre`.
-3. Le host copie le `Lien d'invitation` et l'envoie a l'invite.
-4. L'invite ouvre ce lien: la page detecte l'offre et genere automatiquement une reponse.
-5. L'invite copie le `Bloc base64 pret a partager` et l'envoie au host.
-6. Le host colle ce bloc dans `Bloc recu` puis clique sur `Appliquer la reponse`.
-7. Quand le canal est ouvert, envoie des messages.
+1. Ouvre `index.html` (host): l'offre est creee immediatement.
+2. Copie le lien d'invitation et envoie-le a l'invite.
+3. L'invite ouvre `join.html?offer=...`: la reponse est creee automatiquement.
+4. L'invite copie la reponse base64 et l'envoie au host.
+5. Le host colle cette reponse et clique `Appliquer la reponse`.
+6. Quand le canal est ouvert, envoie des messages.
 
-## Formats acceptes dans Bloc recu
+## Format recommande pour la reponse
 
-- JSON SDP (ancien format)
-- Base64 du JSON SDP
-- Lien contenant `?offer=...` ou `?answer=...`
+- Base64 du JSON SDP (celui affiche sur `join.html`).
 
 ## Limites
 
