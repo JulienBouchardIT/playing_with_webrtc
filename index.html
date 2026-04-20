@@ -23,16 +23,13 @@
     <main class="grid">
       <section class="panel panel-accent">
         <h2>Session Host</h2>
-        <p class="section-copy">
-          Le lien est genere automatiquement avec la session encodee dans `session`.
-        </p>
         <label class="field-label" for="inviteLink">Lien d'invitation</label>
         <textarea id="inviteLink" class="code-box compact-box" readonly placeholder="Le lien d'invitation apparaitra ici apres creation d'offre."></textarea>
         <div class="action-row compact-row">
           <button id="copyInviteLinkButton" class="button">Copier le lien</button>
           <button id="regenerateOfferButton" class="button button-ghost">Regenerer la session</button>
         </div>
-        <label class="field-label" for="remoteSignal">Bloc recu (base64, JSON ou lien)</label>
+        <label class="field-label" for="remoteSignal">Invite Token</label>
         <textarea id="remoteSignal" class="code-box" placeholder="Colle ici la reponse envoyee par l'invite."></textarea>
         <div class="action-row compact-row">
           <button id="applyAnswerButton" class="button button-primary">Appliquer la reponse</button>
