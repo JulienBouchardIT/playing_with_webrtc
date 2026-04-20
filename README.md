@@ -1,41 +1,41 @@
 # WebRTC Duo Chat
 
-Petite page statique compatible GitHub Pages pour discuter entre deux pages web avec WebRTC.
+Simple static page compatible with GitHub Pages to chat between two web pages using WebRTC.
 
-Page en ligne: https://julienbouchardit.github.io/playing_with_webrtc/
+Live page: https://julienbouchardit.github.io/playing_with_webrtc/
 
-## Ce que fait le projet
+## How it works
 
-- Front statique compatible GitHub Pages.
-- Trois pages separees: `index.html` (host), `join.html` (invite) et `chat.html` (chat).
-- La page host cree automatiquement une session au chargement.
-- Le lien d'invitation contient la session en base64 (`session`).
-- La page invite accepte automatiquement la session depuis l'URL et genere une reponse base64.
-- Quand la session WebRTC passe en connectee, `chat.html` s'ouvre automatiquement.
-- Chat texte via `RTCDataChannel`.
+- Static frontend compatible with GitHub Pages.
+- Three separate pages: `index.html` (host), `join.html` (invite), and `chat.html` (chat).
+- The host page automatically creates a session on load.
+- The invite link contains the session encoded in base64 (the `session` URL parameter).
+- The invite page automatically accepts the session from the URL and generates a base64 answer.
+- When the WebRTC session connects, `chat.html` automatically opens in a new tab.
+- Text chat via `RTCDataChannel`.
 
-## Mise en ligne sur GitHub Pages
+## Deploying to GitHub Pages
 
-1. Cree un depot GitHub et pousse ces fichiers.
-2. Dans les reglages du depot, active GitHub Pages sur la branche voulue.
-3. Ouvre l'URL publiee sur deux navigateurs ou deux machines.
+1. Create a GitHub repository and push these files.
+2. In your repository settings, enable GitHub Pages on the desired branch.
+3. Open the published URL on two browsers or two different machines.
 
-## Utilisation
+## Usage
 
-1. Ouvre `index.html` (host): la session est creee immediatement.
-2. Copie le lien d'invitation et envoie-le a l'invite.
-3. L'invite ouvre `join.html?session=...`: la reponse est creee automatiquement.
-4. L'invite copie la reponse base64 et l'envoie au host.
-5. Le host colle cette reponse et clique `Appliquer la reponse`.
-6. Quand la session devient connectee, la page `chat.html` s'ouvre automatiquement de chaque cote.
-7. Echange les messages depuis `chat.html`.
+1. Open `index.html` (host): the session is created immediately.
+2. Copy the invite link and send it to your peer.
+3. The invite opens `join.html?session=...`: the answer is generated automatically.
+4. The invite copies the invite token and sends it to the host.
+5. The host pastes the token and clicks `Apply answer`.
+6. When the session connects, `chat.html` opens automatically in a new tab on both sides.
+7. Exchange messages from the `chat.html` page.
 
-## Format recommande pour la reponse
+## Token format
 
-- Base64 du JSON SDP (celui affiche sur `join.html`).
+- Base64-encoded JSON containing the SDP answer (what is shown in the `Invite Token` field on `join.html`).
 
-## Limites
+## Known limitations
 
-- L'etape initiale reste semi-manuelle: l'invite renvoie son bloc base64 au host.
-- La page de connexion doit rester ouverte en arriere-plan pendant l'usage de `chat.html`.
-- La connexion depend de WebRTC et des reseaux en face. Certains environnements tres restrictifs peuvent bloquer la liaison pair-a-pair.
+- The initial step is semi-manual: the invite must copy and send their token to the host.
+- The host/invite pages must remain open in the background while using the chat page.
+- The connection depends on WebRTC and network configuration. Highly restrictive network environments may block peer-to-peer connections.
