@@ -28,25 +28,17 @@ const chatForm = document.querySelector("#chatForm");
 const messageTemplate = document.querySelector("#messageTemplate");
 
 let peerConnection = null;
-let dataChannel = null;
-let currentRole = null;
-let currentSessionId = null;
-let signalingSocket = null;
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }],
 let joinedRoomId = null;
 
 function setRole(role) {
   currentRole = role;
   roleBadge.textContent = role ? `Role: ${role}` : "Aucun role";
-}
-
-function setConnectionState(label, isReady = false) {
   connectionBadge.textContent = label;
   connectionBadge.classList.toggle("badge-ready", isReady);
   connectionBadge.classList.toggle("badge-idle", !isReady);
 }
 
-function setChannelState(label, isOpen = false) {
-  channelState.textContent = label;
   messageInput.disabled = !isOpen;
   sendButton.disabled = !isOpen;
 }
@@ -60,8 +52,6 @@ function generateSessionId() {
     return crypto.randomUUID();
   }
 
-  return `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
 
 function hasOfferReadyForAnswer() {
   return !!peerConnection && !!peerConnection.localDescription && peerConnection.localDescription.type === "offer";
@@ -80,9 +70,6 @@ function addMessage(author, body) {
     hour: "2-digit",
     minute: "2-digit",
   });
-  fragment.querySelector(".message-body").textContent = body;
-  messages.append(fragment);
-  messages.scrollTop = messages.scrollHeight;
 }
 
 function addSystemMessage(body) {
@@ -96,9 +83,6 @@ function serializeDescription(description, extras = {}) {
       sdp: description.sdp,
       ...extras,
     },
-    null,
-    2,
-  );
 }
 
 function parseSignal(value) {
