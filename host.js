@@ -18,6 +18,7 @@ let peerConnection = null;
 let dataChannel = null;
 let currentSessionId = null;
 let bridgeChannel = null;
+let chatOpened = false;
 
 function setConnectionState(label, isReady = false) {
   connectionBadge.textContent = label;
@@ -100,7 +101,17 @@ function setBridgeChannel(sessionId) {
   bridgeChannel = new BroadcastChannel(`webrtc-chat-${sessionId}`);
   bridgeChannel.addEventListener("message", (event) => {
     const payload = event.data;
-    if (!payload || payload.kind !== "outbound") {
+    if (!payload || typeof payload !== "object") {
+      return;
+    }
+
+    if (payload.kind === "sync-request") {
+      const isConnected = !!dataChannel && dataChannel.readyState === "open";
+      bridgeState(isConnected ? "Session connectee" : "En attente de connexion", isConnected);
+      return;
+    }
+
+    if (payload.kind !== "outbound") {
       return;
     }
 
@@ -120,6 +131,7 @@ function openChatPage(role) {
   const tab = window.open(url.toString(), "_blank");
 
   if (tab) {
+    chatOpened = true;
     tab.focus();
   }
 }
@@ -143,7 +155,9 @@ function wireDataChannel(channel) {
     setConnectionState("Connecte", true);
     setChannelState("Canal ouvert");
     bridgeState("Session connectee", true);
-    openChatPage("host");
+    if (!chatOpened) {
+      openChatPage("host");
+    }
   });
 
   dataChannel.addEventListener("close", () => {
@@ -236,6 +250,7 @@ function resetSession() {
   dataChannel = null;
   bridgeChannel = null;
   currentSessionId = null;
+  chatOpened = false;
   inviteLink.value = "";
   remoteSignal.value = "";
   setConnectionState("Hors ligne");

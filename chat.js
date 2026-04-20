@@ -93,6 +93,9 @@ function init() {
   setConnectionState("En attente de connexion");
   setChannelState("Canal ferme", false);
   addSystemMessage("Page chat prete. En attente d'une session connectee.");
+
+  // Ask the host/invite page for current state in case initial events were missed.
+  bridgeChannel.postMessage({ kind: "sync-request" });
 }
 
 chatForm.addEventListener("submit", sendMessage);
