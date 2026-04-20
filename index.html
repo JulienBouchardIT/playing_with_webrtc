@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WebRTC Duo Chat</title>
-  <meta name="description" content="Chat WebRTC simple entre deux pages web, compatible GitHub Pages.">
+  <meta name="description" content="Simple WebRTC chat between two web pages, GitHub Pages compatible.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -14,25 +14,25 @@
   <div class="page-shell">
     <header class="hero">
       <div class="status-bar">
-        <span id="connectionBadge" class="badge badge-idle">Hors ligne</span>
+        <span id="connectionBadge" class="badge badge-idle">Offline</span>
         <span id="roleBadge" class="badge">Role: Host</span>
-        <span id="channelState" class="badge">Canal ferme</span>
+        <span id="channelState" class="badge">Channel closed</span>
       </div>
     </header>
 
     <main class="grid">
       <section class="panel panel-accent">
-        <h2>Session Host</h2>
-        <label class="field-label" for="inviteLink">Lien d'invitation</label>
-        <textarea id="inviteLink" class="code-box compact-box" readonly placeholder="Le lien d'invitation apparaitra ici apres creation d'offre."></textarea>
+        <h2>Host Session</h2>
+        <label class="field-label" for="inviteLink">Invite link</label>
+        <textarea id="inviteLink" class="code-box compact-box" readonly placeholder="The invite link will appear here after creating an offer."></textarea>
         <div class="action-row compact-row">
-          <button id="copyInviteLinkButton" class="button">Copier le lien</button>
-          <button id="regenerateOfferButton" class="button button-ghost">Regenerer la session</button>
+          <button id="copyInviteLinkButton" class="button">Copy link</button>
+          <button id="regenerateOfferButton" class="button button-ghost">Regenerate session</button>
         </div>
         <label class="field-label" for="remoteSignal">Invite Token</label>
-        <textarea id="remoteSignal" class="code-box" placeholder="Colle ici la reponse envoyee par l'invite."></textarea>
+        <textarea id="remoteSignal" class="code-box" placeholder="Paste the answer sent by the invite here."></textarea>
         <div class="action-row compact-row">
-          <button id="applyAnswerButton" class="button button-primary">Appliquer la reponse</button>
+          <button id="applyAnswerButton" class="button button-primary">Apply answer</button>
         </div>
       </section>
     </main>

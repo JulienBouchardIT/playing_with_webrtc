@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WebRTC Invite</title>
-  <meta name="description" content="Page invite WebRTC: accepte une offre depuis l'URL et genere une reponse.">
+  <meta name="description" content="WebRTC invite page: accepts an offer from the URL and generates an answer.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -14,21 +14,21 @@
   <div class="page-shell">
     <header class="hero">
       <div class="status-bar">
-        <span id="connectionBadge" class="badge badge-idle">Hors ligne</span>
+        <span id="connectionBadge" class="badge badge-idle">Offline</span>
         <span id="roleBadge" class="badge">Role: Invite</span>
       </div>
     </header>
 
     <main class="grid">
       <section class="panel panel-accent">
-        <h2>Session Invite</h2>
+        <h2>Invite Session</h2>
         <label class="field-label" for="answerBase64">Invite Token</label>
-        <textarea id="answerBase64" class="code-box compact-box" readonly placeholder="La reponse base64 apparaitra ici."></textarea>
+        <textarea id="answerBase64" class="code-box compact-box" readonly placeholder="The base64 answer will appear here."></textarea>
         <div class="action-row compact-row">
-          <button id="copyAnswerButton" class="button button-primary">Copier la reponse</button>
-          <button id="regenerateAnswerButton" class="button button-ghost">Regenerer</button>
+          <button id="copyAnswerButton" class="button button-primary">Copy answer</button>
+          <button id="regenerateAnswerButton" class="button button-ghost">Regenerate</button>
         </div>
-        <span id="channelState" class="badge">Canal ferme</span>
+        <span id="channelState" class="badge">Channel closed</span>
       </section>
     </main>
   </div>
