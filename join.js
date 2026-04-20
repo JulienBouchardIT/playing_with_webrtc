@@ -10,17 +10,14 @@ const roleBadge = document.querySelector("#roleBadge");
 const channelState = document.querySelector("#channelState");
 const answerBase64 = document.querySelector("#answerBase64");
 const localSignal = document.querySelector("#localSignal");
-const messages = document.querySelector("#messages");
-const messageInput = document.querySelector("#messageInput");
-const sendButton = document.querySelector("#sendButton");
 const copyAnswerButton = document.querySelector("#copyAnswerButton");
 const regenerateAnswerButton = document.querySelector("#regenerateAnswerButton");
-const chatForm = document.querySelector("#chatForm");
-const messageTemplate = document.querySelector("#messageTemplate");
 
 let peerConnection = null;
 let dataChannel = null;
+let bridgeChannel = null;
 let sessionToken = null;
+let sessionId = null;
 
 function setConnectionState(label, isReady = false) {
   connectionBadge.textContent = label;
@@ -28,34 +25,8 @@ function setConnectionState(label, isReady = false) {
   connectionBadge.classList.toggle("badge-idle", !isReady);
 }
 
-function setChannelState(label, isOpen = false) {
+function setChannelState(label) {
   channelState.textContent = label;
-  messageInput.disabled = !isOpen;
-  sendButton.disabled = !isOpen;
-}
-
-function addMessage(author, body) {
-  const fragment = messageTemplate.content.cloneNode(true);
-  const root = fragment.querySelector(".message");
-  root.dataset.author = author;
-  fragment.querySelector(".message-author").textContent = author;
-  fragment.querySelector(".message-time").textContent = new Date().toLocaleTimeString("fr-FR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  fragment.querySelector(".message-body").textContent = body;
-  messages.append(fragment);
-  messages.scrollTop = messages.scrollHeight;
-}
-
-function addSystemMessage(body) {
-  addMessage("Systeme", body);
-}
-
-function fromBase64(value) {
-  const binary = atob(value);
-  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
 }
 
 function toBase64(value) {
@@ -67,7 +38,13 @@ function toBase64(value) {
   return btoa(binary);
 }
 
-function parseSessionFromToken(token) {
+function fromBase64(value) {
+  const binary = atob(value);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function parseSessionToken(token) {
   const decoded = fromBase64(token);
   const payload = JSON.parse(decoded);
 
@@ -78,24 +55,67 @@ function parseSessionFromToken(token) {
   return payload;
 }
 
+function setBridgeChannel(id) {
+  if (bridgeChannel) {
+    bridgeChannel.close();
+  }
+
+  bridgeChannel = new BroadcastChannel(`webrtc-chat-${id}`);
+  bridgeChannel.addEventListener("message", (event) => {
+    const payload = event.data;
+    if (!payload || payload.kind !== "outbound") {
+      return;
+    }
+
+    if (!dataChannel || dataChannel.readyState !== "open") {
+      return;
+    }
+
+    dataChannel.send(payload.text);
+    bridgeChannel.postMessage({ kind: "self", text: payload.text });
+  });
+}
+
+function openChatPage() {
+  const url = new URL("chat.html", window.location.href);
+  url.searchParams.set("session", sessionId);
+  url.searchParams.set("role", "invite");
+  const tab = window.open(url.toString(), "_blank");
+  if (tab) {
+    tab.focus();
+  }
+}
+
+function bridgeState(text, connected = false) {
+  if (!bridgeChannel) {
+    return;
+  }
+
+  bridgeChannel.postMessage({ kind: "state", text, connected });
+}
+
 function wireDataChannel(channel) {
   dataChannel = channel;
 
   dataChannel.addEventListener("open", () => {
     setConnectionState("Connecte", true);
-    setChannelState("Canal ouvert", true);
-    addSystemMessage("Canal WebRTC ouvert. Tu peux discuter.");
-    messageInput.focus();
+    setChannelState("Canal ouvert");
+    bridgeState("Session connectee", true);
+    openChatPage();
   });
 
   dataChannel.addEventListener("close", () => {
     setConnectionState("Deconnecte", false);
-    setChannelState("Canal ferme", false);
-    addSystemMessage("Le canal a ete ferme.");
+    setChannelState("Canal ferme");
+    bridgeState("Session fermee", false);
   });
 
   dataChannel.addEventListener("message", (event) => {
-    addMessage("Pair", event.data);
+    if (!bridgeChannel) {
+      return;
+    }
+
+    bridgeChannel.postMessage({ kind: "incoming", text: event.data });
   });
 }
 
@@ -105,7 +125,7 @@ function createPeerConnection() {
   }
 
   peerConnection = new RTCPeerConnection(configuration);
-  setConnectionState("Pret a negocier");
+  setConnectionState("Session prete");
 
   peerConnection.addEventListener("connectionstatechange", () => {
     const state = peerConnection.connectionState;
@@ -117,17 +137,22 @@ function createPeerConnection() {
 
     if (state === "connecting") {
       setConnectionState("Connexion en cours");
+      setChannelState("Canal en cours");
+      bridgeState("Connexion en cours", false);
       return;
     }
 
     if (state === "failed") {
       setConnectionState("Echec de connexion");
-      addSystemMessage("Echec de connexion. Demande un nouveau lien d'invitation.");
+      setChannelState("Canal ferme");
+      bridgeState("Echec de connexion", false);
       return;
     }
 
     if (state === "disconnected" || state === "closed") {
       setConnectionState("Deconnecte");
+      setChannelState("Canal ferme");
+      bridgeState("Session deconnectee", false);
     }
   });
 
@@ -155,7 +180,7 @@ function waitForIceGatheringComplete(connection) {
   });
 }
 
-function resetInviteState() {
+function resetSession() {
   if (dataChannel) {
     dataChannel.close();
   }
@@ -164,14 +189,17 @@ function resetInviteState() {
     peerConnection.close();
   }
 
+  if (bridgeChannel) {
+    bridgeChannel.close();
+  }
+
   peerConnection = null;
   dataChannel = null;
+  bridgeChannel = null;
   answerBase64.value = "";
   localSignal.value = "";
-  messages.replaceChildren();
-  messageInput.value = "";
   setConnectionState("Hors ligne");
-  setChannelState("Canal ferme", false);
+  setChannelState("Canal ferme");
 }
 
 async function acceptSessionFromUrl() {
@@ -179,10 +207,13 @@ async function acceptSessionFromUrl() {
     throw new Error("Cette page doit etre ouverte avec un parametre session dans l'URL.");
   }
 
-  resetInviteState();
+  resetSession();
   roleBadge.textContent = "Role: Invite";
 
-  const offer = parseSessionFromToken(sessionToken);
+  const offer = parseSessionToken(sessionToken);
+  sessionId = offer.sessionId || `session-${Date.now()}`;
+  setBridgeChannel(sessionId);
+
   const connection = createPeerConnection();
   await connection.setRemoteDescription({ type: offer.type, sdp: offer.sdp });
 
@@ -193,13 +224,14 @@ async function acceptSessionFromUrl() {
   const answerPayload = {
     type: connection.localDescription.type,
     sdp: connection.localDescription.sdp,
-    sessionId: offer.sessionId || null,
+    sessionId,
   };
 
   localSignal.value = JSON.stringify(answerPayload, null, 2);
   answerBase64.value = toBase64(JSON.stringify(answerPayload));
   setConnectionState("Reponse generee");
-  addSystemMessage("Reponse prete. Copie-la et envoie-la au host.");
+  setChannelState("Canal ferme");
+  bridgeState("Reponse generee", false);
 }
 
 async function copyAnswer() {
@@ -208,38 +240,22 @@ async function copyAnswer() {
   }
 
   await navigator.clipboard.writeText(answerBase64.value);
-  addSystemMessage("Reponse copiee.");
-}
-
-function sendMessage(event) {
-  event.preventDefault();
-  const value = messageInput.value.trim();
-
-  if (!value || !dataChannel || dataChannel.readyState !== "open") {
-    return;
-  }
-
-  dataChannel.send(value);
-  addMessage("Moi", value);
-  messageInput.value = "";
-  messageInput.focus();
 }
 
 async function runAction(action) {
   try {
     await action();
   } catch (error) {
-    addSystemMessage(error.message || "Une erreur est survenue.");
+    setChannelState(error.message || "Erreur");
   }
 }
 
 copyAnswerButton.addEventListener("click", () => runAction(copyAnswer));
 regenerateAnswerButton.addEventListener("click", () => runAction(acceptSessionFromUrl));
-chatForm.addEventListener("submit", sendMessage);
 
 const url = new URL(window.location.href);
 sessionToken = url.searchParams.get("session") || url.searchParams.get("offer");
 
 setConnectionState("Hors ligne");
-setChannelState("Canal ferme", false);
+setChannelState("Canal ferme");
 runAction(acceptSessionFromUrl);

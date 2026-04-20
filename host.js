@@ -10,18 +10,14 @@ const roleBadge = document.querySelector("#roleBadge");
 const channelState = document.querySelector("#channelState");
 const inviteLink = document.querySelector("#inviteLink");
 const remoteSignal = document.querySelector("#remoteSignal");
-const messages = document.querySelector("#messages");
-const messageInput = document.querySelector("#messageInput");
-const sendButton = document.querySelector("#sendButton");
 const applyAnswerButton = document.querySelector("#applyAnswerButton");
 const copyInviteLinkButton = document.querySelector("#copyInviteLinkButton");
 const regenerateOfferButton = document.querySelector("#regenerateOfferButton");
-const chatForm = document.querySelector("#chatForm");
-const messageTemplate = document.querySelector("#messageTemplate");
 
 let peerConnection = null;
 let dataChannel = null;
 let currentSessionId = null;
+let bridgeChannel = null;
 
 function setConnectionState(label, isReady = false) {
   connectionBadge.textContent = label;
@@ -29,28 +25,20 @@ function setConnectionState(label, isReady = false) {
   connectionBadge.classList.toggle("badge-idle", !isReady);
 }
 
-function setChannelState(label, isOpen = false) {
+function setChannelState(label) {
   channelState.textContent = label;
-  messageInput.disabled = !isOpen;
-  sendButton.disabled = !isOpen;
 }
 
-function addMessage(author, body) {
-  const fragment = messageTemplate.content.cloneNode(true);
-  const root = fragment.querySelector(".message");
-  root.dataset.author = author;
-  fragment.querySelector(".message-author").textContent = author;
-  fragment.querySelector(".message-time").textContent = new Date().toLocaleTimeString("fr-FR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  fragment.querySelector(".message-body").textContent = body;
-  messages.append(fragment);
-  messages.scrollTop = messages.scrollHeight;
+function setRole(role) {
+  roleBadge.textContent = `Role: ${role}`;
 }
 
-function addSystemMessage(body) {
-  addMessage("Systeme", body);
+function generateSessionId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function toBase64(value) {
@@ -66,14 +54,6 @@ function fromBase64(value) {
   const binary = atob(value);
   const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
   return new TextDecoder().decode(bytes);
-}
-
-function generateSessionId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-
-  return `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function parseSignal(value) {
@@ -96,7 +76,7 @@ function parseSignal(value) {
       return parsedJson;
     }
   } catch (error) {
-    // Continue with base64.
+    // Continue with base64 parsing.
   }
 
   try {
@@ -112,24 +92,72 @@ function parseSignal(value) {
   throw new Error("Le signal colle n'est ni un JSON valide ni un base64 valide.");
 }
 
+function setBridgeChannel(sessionId) {
+  if (bridgeChannel) {
+    bridgeChannel.close();
+  }
+
+  bridgeChannel = new BroadcastChannel(`webrtc-chat-${sessionId}`);
+  bridgeChannel.addEventListener("message", (event) => {
+    const payload = event.data;
+    if (!payload || payload.kind !== "outbound") {
+      return;
+    }
+
+    if (!dataChannel || dataChannel.readyState !== "open") {
+      return;
+    }
+
+    dataChannel.send(payload.text);
+    bridgeChannel.postMessage({ kind: "self", text: payload.text });
+  });
+}
+
+function openChatPage(role) {
+  const url = new URL("chat.html", window.location.href);
+  url.searchParams.set("session", currentSessionId);
+  url.searchParams.set("role", role);
+  const tab = window.open(url.toString(), "_blank");
+
+  if (tab) {
+    tab.focus();
+  }
+}
+
+function bridgeState(stateLabel, connected = false) {
+  if (!bridgeChannel) {
+    return;
+  }
+
+  bridgeChannel.postMessage({
+    kind: "state",
+    text: stateLabel,
+    connected,
+  });
+}
+
 function wireDataChannel(channel) {
   dataChannel = channel;
 
   dataChannel.addEventListener("open", () => {
     setConnectionState("Connecte", true);
-    setChannelState("Canal ouvert", true);
-    addSystemMessage("Le canal WebRTC est pret.");
-    messageInput.focus();
+    setChannelState("Canal ouvert");
+    bridgeState("Session connectee", true);
+    openChatPage("host");
   });
 
   dataChannel.addEventListener("close", () => {
     setConnectionState("Deconnecte", false);
-    setChannelState("Canal ferme", false);
-    addSystemMessage("Le canal a ete ferme.");
+    setChannelState("Canal ferme");
+    bridgeState("Session fermee", false);
   });
 
   dataChannel.addEventListener("message", (event) => {
-    addMessage("Pair", event.data);
+    if (!bridgeChannel) {
+      return;
+    }
+
+    bridgeChannel.postMessage({ kind: "incoming", text: event.data });
   });
 }
 
@@ -144,22 +172,22 @@ function attachPeerConnectionEvents() {
 
     if (state === "connecting") {
       setConnectionState("Connexion en cours");
+      setChannelState("Canal en cours");
+      bridgeState("Connexion en cours", false);
       return;
     }
 
     if (state === "failed") {
       setConnectionState("Echec de connexion");
-      addSystemMessage("La connexion a echoue. Regenerer une nouvelle offre.");
+      bridgeState("Echec de connexion", false);
       return;
     }
 
     if (state === "disconnected" || state === "closed") {
       setConnectionState("Deconnecte");
+      setChannelState("Canal ferme");
+      bridgeState("Session deconnectee", false);
     }
-  });
-
-  peerConnection.addEventListener("datachannel", (event) => {
-    wireDataChannel(event.channel);
   });
 }
 
@@ -170,7 +198,7 @@ function createPeerConnection() {
 
   peerConnection = new RTCPeerConnection(configuration);
   attachPeerConnectionEvents();
-  setConnectionState("Pret a negocier");
+  setConnectionState("Session prete");
   return peerConnection;
 }
 
@@ -191,7 +219,7 @@ function waitForIceGatheringComplete(connection) {
   });
 }
 
-function resetOfferState() {
+function resetSession() {
   if (dataChannel) {
     dataChannel.close();
   }
@@ -200,21 +228,26 @@ function resetOfferState() {
     peerConnection.close();
   }
 
+  if (bridgeChannel) {
+    bridgeChannel.close();
+  }
+
   peerConnection = null;
   dataChannel = null;
+  bridgeChannel = null;
   currentSessionId = null;
-  remoteSignal.value = "";
   inviteLink.value = "";
-  messages.replaceChildren();
-  messageInput.value = "";
+  remoteSignal.value = "";
   setConnectionState("Hors ligne");
-  setChannelState("Canal ferme", false);
+  setChannelState("Canal ferme");
 }
 
-async function createOfferNow() {
-  resetOfferState();
-  roleBadge.textContent = "Role: Host";
+async function createSessionNow() {
+  resetSession();
+  setRole("Host");
+
   currentSessionId = generateSessionId();
+  setBridgeChannel(currentSessionId);
 
   const connection = createPeerConnection();
   const channel = connection.createDataChannel("chat");
@@ -224,20 +257,20 @@ async function createOfferNow() {
   await connection.setLocalDescription(offer);
   await waitForIceGatheringComplete(connection);
 
-  const offerPayload = {
+  const payload = {
     type: connection.localDescription.type,
     sdp: connection.localDescription.sdp,
     sessionId: currentSessionId,
   };
 
-  const offerBase64 = toBase64(JSON.stringify(offerPayload));
-
-  const inviteUrl = new URL("join.html", window.location.href);
-  inviteUrl.searchParams.set("session", offerBase64);
-  inviteLink.value = inviteUrl.toString();
+  const token = toBase64(JSON.stringify(payload));
+  const joinUrl = new URL("join.html", window.location.href);
+  joinUrl.searchParams.set("session", token);
+  inviteLink.value = joinUrl.toString();
 
   setConnectionState("Session generee");
-  addSystemMessage("Session creee automatiquement. Partage le lien d'invitation.");
+  setChannelState("Canal ferme");
+  bridgeState("Session generee", false);
 }
 
 async function applyAnswer() {
@@ -248,7 +281,7 @@ async function applyAnswer() {
   }
 
   if (answer.type !== "answer") {
-    throw new Error("Le signal distant doit etre une reponse.");
+    throw new Error("Le bloc recu doit etre une reponse.");
   }
 
   if (peerConnection.remoteDescription) {
@@ -257,49 +290,30 @@ async function applyAnswer() {
 
   await peerConnection.setRemoteDescription({ type: answer.type, sdp: answer.sdp });
   setConnectionState("Connexion en cours");
-  addSystemMessage("Reponse appliquee. Attente de l'ouverture du canal.");
-}
-
-async function copyText(value, emptyMessage) {
-  if (!value.trim()) {
-    throw new Error(emptyMessage);
-  }
-
-  await navigator.clipboard.writeText(value);
+  setChannelState("Canal en cours");
+  bridgeState("Reponse appliquee, connexion en cours", false);
 }
 
 async function copyInviteLink() {
-  await copyText(inviteLink.value, "Aucun lien d'invitation a copier.");
-  addSystemMessage("Lien d'invitation copie.");
-}
-
-function sendMessage(event) {
-  event.preventDefault();
-  const value = messageInput.value.trim();
-
-  if (!value || !dataChannel || dataChannel.readyState !== "open") {
-    return;
+  if (!inviteLink.value.trim()) {
+    throw new Error("Aucun lien d'invitation a copier.");
   }
 
-  dataChannel.send(value);
-  addMessage("Moi", value);
-  messageInput.value = "";
-  messageInput.focus();
+  await navigator.clipboard.writeText(inviteLink.value);
 }
 
 async function runAction(action) {
   try {
     await action();
   } catch (error) {
-    addSystemMessage(error.message || "Une erreur est survenue.");
+    setChannelState(error.message || "Erreur");
   }
 }
 
 applyAnswerButton.addEventListener("click", () => runAction(applyAnswer));
 copyInviteLinkButton.addEventListener("click", () => runAction(copyInviteLink));
-regenerateOfferButton.addEventListener("click", () => runAction(createOfferNow));
-chatForm.addEventListener("submit", sendMessage);
+regenerateOfferButton.addEventListener("click", () => runAction(createSessionNow));
 
 setConnectionState("Hors ligne");
-setChannelState("Canal ferme", false);
-runAction(createOfferNow);
+setChannelState("Canal ferme");
+runAction(createSessionNow);
