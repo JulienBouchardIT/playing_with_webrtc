@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebRTC Chat</title>
+  <meta name="description" content="Page de chat WebRTC.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <p class="eyebrow">WebRTC Chat</p>
+      <h1>Session active.</h1>
+      <p id="chatMeta" class="hero-copy">En attente du pont de session...</p>
+      <div class="status-bar">
+        <span id="connectionBadge" class="badge badge-idle">Hors ligne</span>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="panel panel-chat">
+        <div class="chat-header">
+          <div>
+            <h2>Messages</h2>
+            <p class="section-copy">Cette page envoie/recoit les messages via la session WebRTC active.</p>
+          </div>
+          <span id="channelState">Canal ferme</span>
+        </div>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <form id="chatForm" class="chat-form">
+          <label class="sr-only" for="messageInput">Message</label>
+          <input id="messageInput" type="text" maxlength="800" placeholder="Ecris un message..." autocomplete="off" disabled>
+          <button id="sendButton" class="button button-primary" type="submit" disabled>Envoyer</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <template id="messageTemplate">
+    <article class="message">
+      <header>
+        <span class="message-author"></span>
+        <time class="message-time"></time>
+      </header>
+      <p class="message-body"></p>
+    </article>
+  </template>
+
+  <script type="module" src="./chat.js"></script>
+</body>
+</html>
