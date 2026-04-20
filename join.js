@@ -213,7 +213,9 @@ function resetSession() {
   bridgeChannel = null;
   chatOpened = false;
   answerBase64.value = "";
-  localSignal.value = "";
+  if (localSignal) {
+    localSignal.value = "";
+  }
   setConnectionState("Hors ligne");
   setChannelState("Canal ferme");
 }
@@ -243,7 +245,9 @@ async function acceptSessionFromUrl() {
     sessionId,
   };
 
-  localSignal.value = JSON.stringify(answerPayload, null, 2);
+  if (localSignal) {
+    localSignal.value = JSON.stringify(answerPayload, null, 2);
+  }
   answerBase64.value = toBase64(JSON.stringify(answerPayload));
   setConnectionState("Reponse generee");
   setChannelState("Canal ferme");

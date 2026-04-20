@@ -118,11 +118,14 @@ h2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+  justify-items: center;
 }
 
 .panel {
   position: relative;
   overflow: hidden;
+  width: 100%;
+  max-width: 640px;
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: 26px;
@@ -137,6 +140,8 @@ h2 {
 
 .panel-chat {
   grid-column: 1 / -1;
+  max-width: none;
+  justify-self: stretch;
 }
 
 .steps {
