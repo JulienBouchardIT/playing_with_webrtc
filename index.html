@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebRTC Duo Chat</title>
+  <meta name="description" content="Chat WebRTC simple entre deux pages web, compatible GitHub Pages.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <p class="eyebrow">GitHub Pages + WebRTC</p>
+      <h1>Chat direct entre deux pages web.</h1>
+      <p class="hero-copy">
+        Ouvre cette page sur deux navigateurs, crée une offre d'un côté, colle la réponse de l'autre,
+        puis discute via un canal WebRTC sans backend applicatif.
+      </p>
+      <div class="status-bar">
+        <span id="connectionBadge" class="badge badge-idle">Hors ligne</span>
+        <span id="roleBadge" class="badge">Aucun role</span>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="panel panel-accent">
+        <h2>1. Initialiser la connexion</h2>
+        <p class="section-copy">
+          Choisis ton côté. L'initiateur crée une offre. Le second colle cette offre et génère une réponse.
+        </p>
+        <div class="action-row">
+          <button id="createOfferButton" class="button button-primary">Creer une offre</button>
+          <button id="acceptOfferButton" class="button">Accepter une offre</button>
+          <button id="resetButton" class="button button-ghost">Reinitialiser</button>
+        </div>
+        <ol class="steps">
+          <li>Côté A: clique sur <strong>Creer une offre</strong> puis partage le bloc genere.</li>
+          <li>Côté B: colle l'offre recue, clique sur <strong>Accepter une offre</strong>, puis partage la reponse.</li>
+          <li>Côté A: colle la reponse dans le champ distant et applique-la.</li>
+        </ol>
+      </section>
+
+      <section class="panel">
+        <h2>2. Signal local</h2>
+        <label class="field-label" for="localSignal">Bloc a partager</label>
+        <textarea id="localSignal" class="code-box" readonly placeholder="Le signal local apparaitra ici."></textarea>
+        <div class="action-row compact-row">
+          <button id="copyLocalSignalButton" class="button">Copier</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>3. Signal distant</h2>
+        <label class="field-label" for="remoteSignal">Bloc recu</label>
+        <textarea id="remoteSignal" class="code-box" placeholder="Colle ici l'offre ou la reponse recue."></textarea>
+        <div class="action-row">
+          <button id="createAnswerButton" class="button">Generer une reponse</button>
+          <button id="applyAnswerButton" class="button button-primary">Appliquer la reponse</button>
+        </div>
+      </section>
+
+      <section class="panel panel-chat">
+        <div class="chat-header">
+          <div>
+            <h2>4. Messages</h2>
+            <p class="section-copy">Le chat s'active des que le canal de donnees est ouvert.</p>
+          </div>
+          <span id="channelState">Canal ferme</span>
+        </div>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <form id="chatForm" class="chat-form">
+          <label class="sr-only" for="messageInput">Message</label>
+          <input id="messageInput" type="text" maxlength="800" placeholder="Ecris un message..." autocomplete="off" disabled>
+          <button id="sendButton" class="button button-primary" type="submit" disabled>Envoyer</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <template id="messageTemplate">
+    <article class="message">
+      <header>
+        <span class="message-author"></span>
+        <time class="message-time"></time>
+      </header>
+      <p class="message-body"></p>
+    </article>
+  </template>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
