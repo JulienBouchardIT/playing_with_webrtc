@@ -91,11 +91,8 @@ function openChatPage() {
   const url = new URL("chat.html", window.location.href);
   url.searchParams.set("session", sessionId);
   url.searchParams.set("role", "invite");
-  const tab = window.open(url.toString(), "_blank");
-  if (tab) {
-    chatOpened = true;
-    tab.focus();
-  }
+  chatOpened = true;
+  window.location.assign(url.toString());
 }
 
 function bridgeState(text, connected = false) {
