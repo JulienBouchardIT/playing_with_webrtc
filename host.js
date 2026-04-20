@@ -9,14 +9,12 @@ const connectionBadge = document.querySelector("#connectionBadge");
 const roleBadge = document.querySelector("#roleBadge");
 const channelState = document.querySelector("#channelState");
 const inviteLink = document.querySelector("#inviteLink");
-const localSignalBase64 = document.querySelector("#localSignalBase64");
 const remoteSignal = document.querySelector("#remoteSignal");
 const messages = document.querySelector("#messages");
 const messageInput = document.querySelector("#messageInput");
 const sendButton = document.querySelector("#sendButton");
 const applyAnswerButton = document.querySelector("#applyAnswerButton");
 const copyInviteLinkButton = document.querySelector("#copyInviteLinkButton");
-const copyLocalSignalBase64Button = document.querySelector("#copyLocalSignalBase64Button");
 const regenerateOfferButton = document.querySelector("#regenerateOfferButton");
 const chatForm = document.querySelector("#chatForm");
 const messageTemplate = document.querySelector("#messageTemplate");
@@ -206,7 +204,6 @@ function resetOfferState() {
   dataChannel = null;
   currentSessionId = null;
   remoteSignal.value = "";
-  localSignalBase64.value = "";
   inviteLink.value = "";
   messages.replaceChildren();
   messageInput.value = "";
@@ -234,21 +231,20 @@ async function createOfferNow() {
   };
 
   const offerBase64 = toBase64(JSON.stringify(offerPayload));
-  localSignalBase64.value = offerBase64;
 
   const inviteUrl = new URL("join.html", window.location.href);
-  inviteUrl.searchParams.set("offer", offerBase64);
+  inviteUrl.searchParams.set("session", offerBase64);
   inviteLink.value = inviteUrl.toString();
 
-  setConnectionState("Offre generee");
-  addSystemMessage("Offre creee automatiquement. Partage le lien d'invitation.");
+  setConnectionState("Session generee");
+  addSystemMessage("Session creee automatiquement. Partage le lien d'invitation.");
 }
 
 async function applyAnswer() {
   const answer = parseSignal(remoteSignal.value.trim());
 
   if (!peerConnection || !peerConnection.localDescription || peerConnection.localDescription.type !== "offer") {
-    throw new Error("Aucune offre active. Regenerer d'abord l'offre.");
+    throw new Error("Aucune session active. Regenerer d'abord la session.");
   }
 
   if (answer.type !== "answer") {
@@ -277,11 +273,6 @@ async function copyInviteLink() {
   addSystemMessage("Lien d'invitation copie.");
 }
 
-async function copyOfferBase64() {
-  await copyText(localSignalBase64.value, "Aucune offre base64 a copier.");
-  addSystemMessage("Offre base64 copie.");
-}
-
 function sendMessage(event) {
   event.preventDefault();
   const value = messageInput.value.trim();
@@ -306,7 +297,6 @@ async function runAction(action) {
 
 applyAnswerButton.addEventListener("click", () => runAction(applyAnswer));
 copyInviteLinkButton.addEventListener("click", () => runAction(copyInviteLink));
-copyLocalSignalBase64Button.addEventListener("click", () => runAction(copyOfferBase64));
 regenerateOfferButton.addEventListener("click", () => runAction(createOfferNow));
 chatForm.addEventListener("submit", sendMessage);
 

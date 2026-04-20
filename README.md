@@ -6,9 +6,9 @@ Petite page statique compatible GitHub Pages pour discuter entre deux pages web 
 
 - Front statique compatible GitHub Pages.
 - Deux pages separees: `index.html` (host) et `join.html` (invite).
-- La page host cree automatiquement une offre au chargement.
-- Le lien d'invitation contient l'offre en base64 (`offer`).
-- La page invite accepte automatiquement l'offre depuis l'URL et genere une reponse base64.
+- La page host cree automatiquement une session au chargement.
+- Le lien d'invitation contient la session en base64 (`session`).
+- La page invite accepte automatiquement la session depuis l'URL et genere une reponse base64.
 - Chat texte via `RTCDataChannel`.
 
 ## Mise en ligne sur GitHub Pages
@@ -19,9 +19,9 @@ Petite page statique compatible GitHub Pages pour discuter entre deux pages web 
 
 ## Utilisation
 
-1. Ouvre `index.html` (host): l'offre est creee immediatement.
+1. Ouvre `index.html` (host): la session est creee immediatement.
 2. Copie le lien d'invitation et envoie-le a l'invite.
-3. L'invite ouvre `join.html?offer=...`: la reponse est creee automatiquement.
+3. L'invite ouvre `join.html?session=...`: la reponse est creee automatiquement.
 4. L'invite copie la reponse base64 et l'envoie au host.
 5. Le host colle cette reponse et clique `Appliquer la reponse`.
 6. Quand le canal est ouvert, envoie des messages.

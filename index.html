@@ -14,9 +14,9 @@
   <div class="page-shell">
     <header class="hero">
       <p class="eyebrow">WebRTC Host</p>
-      <h1>Host: offre creee automatiquement.</h1>
+      <h1>Host: session creee automatiquement.</h1>
       <p class="hero-copy">
-        Cette page genere l'offre des l'ouverture. Partage le lien d'invitation, puis colle la reponse
+        Cette page genere la session des l'ouverture. Partage le lien d'invitation, puis colle la reponse
         base64 de l'invite pour ouvrir le chat.
       </p>
       <div class="status-bar">
@@ -29,13 +29,13 @@
       <section class="panel panel-accent">
         <h2>1. Lien d'invitation</h2>
         <p class="section-copy">
-          Le lien est genere automatiquement avec l'offre encodée dans `offer`.
+          Le lien est genere automatiquement avec la session encodee dans `session`.
         </p>
         <label class="field-label" for="inviteLink">Lien d'invitation</label>
         <textarea id="inviteLink" class="code-box compact-box" readonly placeholder="Le lien d'invitation apparaitra ici apres creation d'offre."></textarea>
         <div class="action-row compact-row">
           <button id="copyInviteLinkButton" class="button">Copier le lien</button>
-          <button id="regenerateOfferButton" class="button button-ghost">Regenerer l'offre</button>
+          <button id="regenerateOfferButton" class="button button-ghost">Regenerer la session</button>
         </div>
       </section>
 
@@ -48,19 +48,10 @@
         </div>
       </section>
 
-      <section class="panel">
-        <h2>3. Debug Offre</h2>
-        <label class="field-label" for="localSignalBase64">Offre base64</label>
-        <textarea id="localSignalBase64" class="code-box compact-box" readonly placeholder="Offre base64."></textarea>
-        <div class="action-row">
-          <button id="copyLocalSignalBase64Button" class="button">Copier offre base64</button>
-        </div>
-      </section>
-
       <section class="panel panel-chat">
         <div class="chat-header">
           <div>
-            <h2>4. Messages</h2>
+            <h2>3. Messages</h2>
             <p class="section-copy">Le chat s'active des que le canal de donnees est ouvert.</p>
           </div>
           <span id="channelState">Canal ferme</span>

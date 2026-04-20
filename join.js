@@ -20,7 +20,7 @@ const messageTemplate = document.querySelector("#messageTemplate");
 
 let peerConnection = null;
 let dataChannel = null;
-let offerToken = null;
+let sessionToken = null;
 
 function setConnectionState(label, isReady = false) {
   connectionBadge.textContent = label;
@@ -67,12 +67,12 @@ function toBase64(value) {
   return btoa(binary);
 }
 
-function parseOfferFromToken(token) {
+function parseSessionFromToken(token) {
   const decoded = fromBase64(token);
   const payload = JSON.parse(decoded);
 
   if (payload.type !== "offer" || !payload.sdp) {
-    throw new Error("Le parametre offer n'est pas valide.");
+    throw new Error("Le parametre session n'est pas valide.");
   }
 
   return payload;
@@ -174,15 +174,15 @@ function resetInviteState() {
   setChannelState("Canal ferme", false);
 }
 
-async function acceptOfferFromUrl() {
-  if (!offerToken) {
-    throw new Error("Cette page doit etre ouverte avec un parametre offer dans l'URL.");
+async function acceptSessionFromUrl() {
+  if (!sessionToken) {
+    throw new Error("Cette page doit etre ouverte avec un parametre session dans l'URL.");
   }
 
   resetInviteState();
   roleBadge.textContent = "Role: Invite";
 
-  const offer = parseOfferFromToken(offerToken);
+  const offer = parseSessionFromToken(sessionToken);
   const connection = createPeerConnection();
   await connection.setRemoteDescription({ type: offer.type, sdp: offer.sdp });
 
@@ -234,12 +234,12 @@ async function runAction(action) {
 }
 
 copyAnswerButton.addEventListener("click", () => runAction(copyAnswer));
-regenerateAnswerButton.addEventListener("click", () => runAction(acceptOfferFromUrl));
+regenerateAnswerButton.addEventListener("click", () => runAction(acceptSessionFromUrl));
 chatForm.addEventListener("submit", sendMessage);
 
 const url = new URL(window.location.href);
-offerToken = url.searchParams.get("offer");
+sessionToken = url.searchParams.get("session") || url.searchParams.get("offer");
 
 setConnectionState("Hors ligne");
 setChannelState("Canal ferme", false);
-runAction(acceptOfferFromUrl);
+runAction(acceptSessionFromUrl);
