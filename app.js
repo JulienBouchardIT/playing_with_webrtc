@@ -25,10 +25,22 @@ const messageTemplate = document.querySelector("#messageTemplate");
 let peerConnection = null;
 let dataChannel = null;
 let currentRole = null;
+let currentSessionId = null;
+
+const localSignaling =
+  typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("webrtc-duo-signaling") : null;
 
 function setRole(role) {
   currentRole = role;
   roleBadge.textContent = role ? `Role: ${role}` : "Aucun role";
+}
+
+function generateSessionId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function setConnectionState(label, isReady = false) {
@@ -41,6 +53,10 @@ function setChannelState(label, isOpen = false) {
   channelState.textContent = label;
   messageInput.disabled = !isOpen;
   sendButton.disabled = !isOpen;
+}
+
+function hasOfferReadyForAnswer() {
+  return !!peerConnection && !!peerConnection.localDescription && peerConnection.localDescription.type === "offer";
 }
 
 function addMessage(author, body) {
@@ -135,6 +151,7 @@ function resetChat() {
   peerConnection = null;
   dataChannel = null;
   currentRole = null;
+  currentSessionId = null;
   localSignal.value = "";
   remoteSignal.value = "";
   messages.replaceChildren();
@@ -161,11 +178,12 @@ function waitForIceGatheringComplete(connection) {
   });
 }
 
-function serializeDescription(description) {
+function serializeDescription(description, extras = {}) {
   return JSON.stringify(
     {
       type: description.type,
       sdp: description.sdp,
+      ...extras,
     },
     null,
     2,
@@ -189,6 +207,7 @@ function parseSignal(value) {
 async function createOffer() {
   resetChat();
   setRole("Initiateur");
+  currentSessionId = generateSessionId();
 
   const connection = createPeerConnection();
   const channel = connection.createDataChannel("chat");
@@ -198,9 +217,9 @@ async function createOffer() {
   await connection.setLocalDescription(offer);
   await waitForIceGatheringComplete(connection);
 
-  localSignal.value = serializeDescription(connection.localDescription);
+  localSignal.value = serializeDescription(connection.localDescription, { sessionId: currentSessionId });
   setConnectionState("Offre generee");
-  addSystemMessage("Envoie ce bloc a la seconde page, puis colle sa reponse dans le champ distant.");
+  addSystemMessage("Envoie ce bloc a la seconde page. Si les 2 pages sont sur le meme navigateur, la reponse peut revenir automatiquement.");
 }
 
 async function createAnswer() {
@@ -212,6 +231,7 @@ async function createAnswer() {
 
   resetChat();
   setRole("Repondeur");
+  currentSessionId = offer.sessionId || null;
 
   const connection = createPeerConnection();
   await connection.setRemoteDescription(offer);
@@ -220,15 +240,29 @@ async function createAnswer() {
   await connection.setLocalDescription(answer);
   await waitForIceGatheringComplete(connection);
 
-  localSignal.value = serializeDescription(connection.localDescription);
+  localSignal.value = serializeDescription(connection.localDescription, {
+    sessionId: currentSessionId,
+  });
   setConnectionState("Reponse generee");
+
+  if (localSignaling && currentSessionId) {
+    localSignaling.postMessage({
+      kind: "answer",
+      sessionId: currentSessionId,
+      answer: {
+        type: connection.localDescription.type,
+        sdp: connection.localDescription.sdp,
+      },
+    });
+    addSystemMessage("Reponse envoyee automatiquement a l'autre onglet (meme navigateur). Garde le bloc manuel en secours.");
+    return;
+  }
+
   addSystemMessage("Renvoie ce bloc a l'initiateur pour terminer la connexion.");
 }
 
-async function applyAnswer() {
-  const answer = parseSignal(remoteSignal.value.trim());
-
-  if (!peerConnection || !peerConnection.localDescription || peerConnection.localDescription.type !== "offer") {
+async function applyAnswerPayload(answer, source = "manuel") {
+  if (!hasOfferReadyForAnswer()) {
     throw new Error("Cree d'abord une offre avant d'appliquer une reponse.");
   }
 
@@ -236,9 +270,23 @@ async function applyAnswer() {
     throw new Error("Le signal distant doit etre une reponse.");
   }
 
+  if (peerConnection.remoteDescription) {
+    return;
+  }
+
   await peerConnection.setRemoteDescription(answer);
   setConnectionState("Connexion en cours");
-  addSystemMessage("La reponse a ete appliquee. Attente de l'ouverture du canal.");
+
+  if (source === "auto") {
+    addSystemMessage("Reponse recue automatiquement depuis l'autre onglet.");
+  } else {
+    addSystemMessage("La reponse a ete appliquee. Attente de l'ouverture du canal.");
+  }
+}
+
+async function applyAnswer() {
+  const answer = parseSignal(remoteSignal.value.trim());
+  await applyAnswerPayload(answer, "manuel");
 }
 
 async function copyLocalSignal() {
@@ -272,6 +320,22 @@ async function runAction(action) {
   }
 }
 
+function handleLocalSignalingMessage(event) {
+  const payload = event.data;
+
+  if (!payload || payload.kind !== "answer") {
+    return;
+  }
+
+  if (currentRole !== "Initiateur" || !currentSessionId || payload.sessionId !== currentSessionId) {
+    return;
+  }
+
+  runAction(async () => {
+    await applyAnswerPayload(payload.answer, "auto");
+  });
+}
+
 createOfferButton.addEventListener("click", () => runAction(createOffer));
 acceptOfferButton.addEventListener("click", () => {
   remoteSignal.focus();
@@ -282,6 +346,10 @@ applyAnswerButton.addEventListener("click", () => runAction(applyAnswer));
 copyLocalSignalButton.addEventListener("click", () => runAction(copyLocalSignal));
 resetButton.addEventListener("click", resetChat);
 chatForm.addEventListener("submit", sendMessage);
+
+if (localSignaling) {
+  localSignaling.addEventListener("message", handleLocalSignalingMessage);
+}
 
 setConnectionState("Hors ligne");
 setChannelState("Canal ferme", false);

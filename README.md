@@ -7,6 +7,7 @@ Petite page statique compatible GitHub Pages pour discuter entre deux pages web 
 - Aucune dependance npm.
 - Aucune API serveur.
 - Signalisation manuelle par copier-coller de l'offre et de la reponse SDP.
+- Retour automatique de la reponse de B vers A si les deux pages sont ouvertes dans le meme navigateur (meme origine) via `BroadcastChannel`.
 - Chat texte via `RTCDataChannel`.
 
 ## Mise en ligne sur GitHub Pages
@@ -21,11 +22,13 @@ Petite page statique compatible GitHub Pages pour discuter entre deux pages web 
 2. Copie le bloc local et envoie-le a la seconde page.
 3. Sur la seconde page, colle ce bloc dans `Signal distant`.
 4. Clique sur `Generer une reponse`.
-5. Copie la reponse generee et renvoie-la a la premiere page.
-6. Sur la premiere page, colle cette reponse dans `Signal distant` puis clique sur `Appliquer la reponse`.
-7. Quand le canal est ouvert, envoie des messages.
+5. Si les deux pages sont dans le meme navigateur, la reponse revient automatiquement vers A.
+6. Sinon, copie la reponse generee et renvoie-la a la premiere page.
+7. Sur la premiere page, colle cette reponse dans `Signal distant` puis clique sur `Appliquer la reponse`.
+8. Quand le canal est ouvert, envoie des messages.
 
 ## Limites
 
 - Sans serveur de signalisation, l'echange initial se fait manuellement.
+- Le retour automatique B -> A fonctionne uniquement entre onglets/fenetres du meme navigateur sur la meme origine.
 - La connexion depend de WebRTC et des reseaux en face. Certains environnements tres restrictifs peuvent bloquer la liaison pair-a-pair.
