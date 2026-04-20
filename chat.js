@@ -12,6 +12,8 @@ const sessionId = url.searchParams.get("session");
 const role = url.searchParams.get("role") || "user";
 
 let bridgeChannel = null;
+let isConnected = false;
+let syncTimer = null;
 
 function setConnectionState(label, isReady = false) {
   connectionBadge.textContent = label;
@@ -50,8 +52,14 @@ function handleBridgeMessage(event) {
   }
 
   if (payload.kind === "state") {
+    isConnected = !!payload.connected;
     setConnectionState(payload.text || "Etat inconnu", !!payload.connected);
     setChannelState(payload.connected ? "Canal ouvert" : "Canal ferme", !!payload.connected);
+
+    if (isConnected && syncTimer) {
+      clearInterval(syncTimer);
+      syncTimer = null;
+    }
     return;
   }
 
@@ -96,10 +104,24 @@ function init() {
 
   // Ask the host/invite page for current state in case initial events were missed.
   bridgeChannel.postMessage({ kind: "sync-request" });
+
+  // Retry sync while disconnected in case the first request was sent too early.
+  syncTimer = setInterval(() => {
+    if (!bridgeChannel || isConnected) {
+      return;
+    }
+
+    bridgeChannel.postMessage({ kind: "sync-request" });
+  }, 1500);
 }
 
 chatForm.addEventListener("submit", sendMessage);
 window.addEventListener("beforeunload", () => {
+  if (syncTimer) {
+    clearInterval(syncTimer);
+    syncTimer = null;
+  }
+
   if (bridgeChannel) {
     bridgeChannel.close();
   }
